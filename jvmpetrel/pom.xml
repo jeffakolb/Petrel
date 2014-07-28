@@ -170,6 +170,9 @@
 			<resource>
 				<directory>${basedir}/multilang</directory>
 			</resource>
+            <resource>
+                <directory>src/resources</directory>
+            </resource>
 		</resources>
 		<plugins>
 		    <!-- 

@@ -24,3 +24,10 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+.idea
+
+petrel/petrel/generated
+
+target
+*.iml

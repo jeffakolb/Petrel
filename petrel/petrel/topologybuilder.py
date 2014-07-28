@@ -6,6 +6,7 @@ from thrift.protocol import TBinaryProtocol
 from petrel.generated.storm.ttypes import ComponentCommon, Grouping, NullStruct, GlobalStreamId
 from petrel.generated.storm.ttypes import StreamInfo, Bolt, SpoutSpec, ShellComponent
 from petrel.generated.storm.ttypes import ComponentObject, StormTopology
+from petrel.generated.storm.ttypes import JavaObject
 
 # Storm uses GlobalStreamId as a dict key, but the Thrift Python binding doesn't
 # support this. As a simple workaround, add a hash function that always returns
@@ -21,6 +22,7 @@ class TopologyBuilder(object):
     def __init__(self):
         self._bolts = {}
         self._spouts = {}
+        self._java_spouts = {}
         self._commons = {}
     
     #/**
@@ -49,6 +51,11 @@ class TopologyBuilder(object):
         self._initCommon(id, spout, parallelism_hint);
         self._spouts[id] = spout
 
+    def setJavaSpout(self, id, spout, parallelism_hint=None):
+        self._validateUnusedId(id);
+        self._initCommon(id, spout, parallelism_hint);
+        self._java_spouts[id] = spout
+
     def addOutputStream(self, id, streamId, output_fields, direct=False):
         self._commons[id].streams[streamId] = StreamInfo(output_fields, direct=direct)
 
@@ -73,6 +80,16 @@ class TopologyBuilder(object):
             spout_spec.spout_object = ComponentObject()
             spout_spec.spout_object.shell = shell_object
             spout_spec.common = self._getComponentCommon(spoutId, spout)
+            spoutSpecs[spoutId] = spout_spec
+
+        for spoutId, spout in self._java_spouts.iteritems():
+            spout_spec = SpoutSpec()
+            java_object = JavaObject()
+            java_object.full_class_name = spout.classname 
+            java_object.args_list = []
+            spout_spec.spout_object = ComponentObject()
+            spout_spec.spout_object.java_object = java_object
+            spout_spec.common = self._getJavaComponentCommon(spoutId, spout)
             spoutSpecs[spoutId] = spout_spec
 
         topology = StormTopology()
@@ -125,6 +142,15 @@ class TopologyBuilder(object):
         common = self._commons[id]
         stream_info = StreamInfo()
         stream_info.output_fields = component.declareOutputFields()
+        stream_info.direct = False # Appears to be unused by Storm
+        common.streams['default'] = stream_info
+        
+        return common
+    
+    def _getJavaComponentCommon(self, id, component):
+        common = self._commons[id]
+        stream_info = StreamInfo()
+        stream_info.output_fields = component.fields
         stream_info.direct = False # Appears to be unused by Storm
         common.streams['default'] = stream_info
         

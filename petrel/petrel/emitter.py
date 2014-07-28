@@ -56,6 +56,20 @@ class MyEmitterBase(object):
 class Spout(MyEmitterBase, storm.Spout):
     pass
 
+class JavaSpout(object):
+    
+    def __init__(self, classname, fields):
+        self.classname = classname
+        self.fields = fields
+        self._json = {}
+        super(JavaSpout, self).__init__()
+    
+    def getComponentConfiguration(self):
+        if len(self._json):
+            return self._json
+        else:
+            return None
+
 class BasicBolt(MyEmitterBase, storm.BasicBolt):
     pass
 
